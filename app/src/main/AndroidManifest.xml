@@ -21,8 +21,8 @@
             android:value="@integer/google_play_services_version" />
 
         <meta-data
-            android:name="com.google.android.geo.API_KEY"
-            android:value="AIzaSyDILgBK8if9o09TuzWJFLNPidKC2GZRlHc" />
+                android:name="com.google.android.geo.API_KEY"
+                android:value="AIzaSyDILgBK8if9o09TuzWJFLNPidKC2GZRlHc" />
         <activity
             android:name=".activity.MoneyAddActivity"
             android:exported="true" />
