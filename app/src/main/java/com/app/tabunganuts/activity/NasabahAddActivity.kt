@@ -1,8 +1,13 @@
 package com.app.tabunganuts.activity
 
+import android.app.Activity
 import android.content.Intent
 import android.location.Location
+import android.net.Uri
 import android.os.Bundle
+import android.os.StrictMode
+import android.provider.MediaStore
+import android.util.Log
 import android.view.View
 import android.widget.RadioButton
 import android.widget.Toast
@@ -25,6 +30,9 @@ import com.squareup.picasso.Picasso
 import kotlinx.android.synthetic.main.activity_money_add.*
 import kotlinx.android.synthetic.main.akun_list.*
 import mumayank.com.airlocationlibrary.AirLocation
+import com.livinglifetechway.quickpermissions_kotlin.runWithPermissions
+import java.text.SimpleDateFormat
+import java.util.*
 
 class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
     companion object{
@@ -37,10 +45,29 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
     private val MAPBOX_TOKEN = "pk.eyJ1IjoiaGlsbWl5dXN1Zjc4IiwiYSI6ImNsNDhlMm8yNDA2ZHIzZG8yc2xmbXMxdzYifQ.RLnKKlkytbMLIDkLRa4RTg"
     //    pk.eyJ1IjoiaGlsbWl5dXN1Zjc4IiwiYSI6ImNsNDg4Mm95ZjBodWUzZG5jYjl2dXc3eHEifQ.OqUO5VVve0HXmgGu4ThZHA
     var URL = ""
+    var imstr = ""
+    var namaFile = ""
+    var fileUri = Uri.parse("")
+    lateinit var photoHelper : PhotoHelper
+    lateinit var mediaHelper: MediaHelper
+     var selectMedia =true
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_money_add)
         layout_nasabah.visibility = View.VISIBLE
+        mapFragment = supportFragmentManager.findFragmentById(R.id.mapsFragment) as SupportMapFragment
+        mapFragment.getMapAsync(this)
+        try {
+            val m = StrictMode::class.java.getMethod("disableDeathOnFileUriExposure")
+            m.invoke(null)
+        } catch (e:Exception) {
+            e.printStackTrace()
+        }
+
+        photoHelper = PhotoHelper()
+        mediaHelper = MediaHelper(this)
+
         var intentGet: NasabahModel? = intent?.getParcelableExtra<NasabahModel>(UPDATE_AKUN)
         if (intentGet==null){
             getSupportActionBar()!!.setTitle("Add Akun");
@@ -49,11 +76,10 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
                 if (radioButton.text == "Alamat"){
                     inpAlamatAkun.visibility = View.VISIBLE
                     layoutMaps.visibility = View.GONE
+                    inpAlamatAkun.editText?.setText("")
                 }else{
                     inpAlamatAkun.visibility = View.VISIBLE
                     layoutMaps.visibility = View.VISIBLE
-                    URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/address.json?proximity=$lng,$lat&access_token=" +
-                            "$MAPBOX_TOKEN&limit=1"
                     airLoc = AirLocation(this,true,true,
                         object : AirLocation.Callbacks{
                             override fun onFailed(locationFailedEnum: AirLocation.LocationFailedEnum) {
@@ -63,32 +89,25 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
 
                             override fun onSuccess(location: Location) {
                                 val ll = LatLng(location.latitude,location.longitude)
-                                gMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(ll,16.0f))
-//                                getAddressLocation(URL)
+                                URL = "https://api.mapbox.com/geocoding/v5/mapbox.places/${location.longitude},${location.latitude}.json?types=place%2Cpostcode%2Caddress&access_token=" +
+                                        "$MAPBOX_TOKEN&limit=1"
+                                getAddressLocation(URL)
                             }
                         })
                 }
             }
             radioImageNasabah.setOnCheckedChangeListener { radioGroup, i ->
                 var radioButton = radioGroup.findViewById<RadioButton>(radioGroup.getCheckedRadioButtonId())
-                if (radioButton.text.toString() == "Image URL" ){
-                    inpImageAkun.visibility = View.VISIBLE
-                    inpImageAkun.editText?.setOnClickListener {
-                        if (it.isFocusable) {
-                            imageViewAkun.visibility = View.VISIBLE
-                            Picasso.get().load(inpImageAkun.editText!!.text.toString())
-                                .into(imageViewAkun)
-                        }
-                    }
+                if (radioButton.text.toString() == "Image Camera" ){
+                    selectMedia = false
+                    kameraInput()
                 }else{
                     imageViewAkun.visibility = View.VISIBLE
-                    inpImageAkun.visibility = View.GONE
-                    imageViewAkun.setOnClickListener{
-                        var intentGaleri = Intent()
-                        intentGaleri.setType("image/*")
-                        intentGaleri.setAction(Intent.ACTION_GET_CONTENT)
-                        startActivity(Intent.createChooser(intentGaleri,"Pilih Gambar ... "))
-                    }
+                    selectMedia =true
+                    val intent = Intent()
+                    intent.setType("image/*")
+                    intent.setAction(Intent.ACTION_GET_CONTENT)
+                    startActivityForResult(intent, mediaHelper.getRcGallery())
                 }
             }
             btnAddAkunTabungan.setOnClickListener {
@@ -99,18 +118,23 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
             txtNamaAkunList.text = "Update Akun"
         }
     }
+    fun kameraInput() = runWithPermissions(android.Manifest.permission.WRITE_EXTERNAL_STORAGE, android.Manifest.permission.CAMERA ) {
+        fileUri = photoHelper.getOutputMediaFileUri()
+        val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, fileUri)
+        startActivityForResult(intent, photoHelper.getRcCamera())
+    }
     fun getAddressLocation(url : String){
         val request = JsonObjectRequest(
             Request.Method.GET,url,null,
-            Response.Listener {
+            {
+
                 val features = it.getJSONArray("features").getJSONObject(0)
+//                Log.d("alamat-map",it.toString())
                 val place_name = features.getString("place_name")
-                val center = features.getJSONArray("center")
-                val lat = center.get(0).toString()
-                val lng = center.get(1).toString()
                 inpAlamatAkun.editText?.setText(place_name.toString())
 
-            }, Response.ErrorListener {
+            }, {
                 Toast.makeText(this,"can't get destination location", Toast.LENGTH_SHORT).show()
             })
         val q = Volley.newRequestQueue(this)
@@ -124,7 +148,8 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
                 inpNamaAkun.editText?.text.toString(),
                 inpAlamatAkun.editText?.text.toString(),
                 inpHPAkun.editText?.text.toString(),
-                inpImageAkun.editText?.text.toString(),
+//                inpImageAkun.editText?.text.toString(),
+                "",
                 0,
             )
         )
@@ -145,6 +170,7 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
                         gMap!!.addMarker(MarkerOptions().position(ll).title("Posisi Saya"))
                         gMap!!.animateCamera(CameraUpdateFactory.newLatLngZoom(ll,16.0f))
                         lat= location.latitude
+
                         lng=location.longitude
                     }
                 })
@@ -153,6 +179,18 @@ class NasabahAddActivity : AppCompatActivity(), OnMapReadyCallback {
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
         airLoc?.onActivityResult(requestCode, resultCode, data)
         super.onActivityResult(requestCode, resultCode, data)
+
+        if (resultCode == Activity.RESULT_OK)
+            if (requestCode == photoHelper.getRcCamera() && selectMedia==false) {
+                imstr = photoHelper.getBitMaoToString(imageViewAkun, fileUri)
+                namaFile = photoHelper.getMyFileName()
+                imageViewAkun.visibility = View.VISIBLE
+            }
+            if (requestCode == mediaHelper.getRcGallery() && selectMedia==true) {
+            imstr = mediaHelper.getBitmapToString(data?.data, imageViewAkun)
+
+            namaFile = "DC" + SimpleDateFormat("yyyyMMddHHmmss", Locale.getDefault()).format(Date()) + ".jpg"
+            }
     }
 
     override fun onRequestPermissionsResult(

@@ -29,7 +29,8 @@ class NasabahAdapter(val dataNasabah: ArrayList<NasabahModel>, var activity: Act
         alamatTextView.text =akun.alamat
         nomorHpTextView.text =akun.nomorhp
         saldoTextView.text ="Rp. "+akun.saldo.toString()
-        Picasso.get().load(akun.imgnasabah).placeholder(R.mipmap.ic_launcher).into(imgNasabahImageView)
+//        Picasso.get().load(akun.imgnasabah).placeholder(R.mipmap.ic_launcher).error(R.mipmap.ic_launcher).into(imgNasabahImageView)
+
         notifyDataSetChanged()
         return rowView
     }
@@ -46,5 +47,3 @@ class NasabahAdapter(val dataNasabah: ArrayList<NasabahModel>, var activity: Act
         return dataNasabah.size
     }
 }
-
-

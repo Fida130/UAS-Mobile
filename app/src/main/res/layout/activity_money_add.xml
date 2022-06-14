@@ -8,7 +8,7 @@
     android:orientation="vertical">
     <LinearLayout
         android:layout_width="wrap_content"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
         ;
         <com.google.android.material.divider.MaterialDivider
@@ -21,7 +21,7 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
-            android:visibility="visible">
+            android:visibility="gone">
 
 
             <com.google.android.material.textfield.TextInputLayout
@@ -70,6 +70,7 @@
                     android:text="GPS" />
             </RadioGroup>
 
+
             <com.google.android.material.textfield.TextInputLayout
                 android:id="@+id/inpAlamatAkun"
                 android:layout_width="match_parent"
@@ -85,21 +86,18 @@
                     android:minLines="3" />
             </com.google.android.material.textfield.TextInputLayout>
             <LinearLayout
-                android:id="@+id/layoutMaps"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"
-                >
-                <fragment
-                    android:id="@+id/mapsFragment"
-                    android:layout_margin="16dp"
-                    android:name="com.google.android.gms.maps.SupportMapFragment"
+                    android:id="@+id/layoutMaps"
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintTop_toTopOf="parent" />
+                    android:layout_height="200dp"
+                    android:visibility="gone"
+            >
+                <fragment
+                        android:id="@+id/mapsFragment"
+                        android:layout_margin="16dp"
+                        android:name="com.google.android.gms.maps.SupportMapFragment"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                />
             </LinearLayout>
 
 
